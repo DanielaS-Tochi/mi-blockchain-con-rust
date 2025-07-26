@@ -1,40 +1,46 @@
-use sha2::{Digest, Sha256};
 use chrono::Utc;
-use serde::{Serialize, Deserialize};
+use sha2::{Digest, Sha256};
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(PartialEq)]
 pub struct Transaction {
     pub sender: String,
     pub receiver: String,
-    pub amount: u64,
+    pub amount: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Block {
-    pub index: u32,
     pub timestamp: i64,
     pub transactions: Vec<Transaction>,
     pub previous_hash: String,
     pub hash: String,
+    pub nonce: u64,
 }
 
 impl Block {
-    pub fn new(index: u32, transactions: Vec<Transaction>, previous_hash: String) -> Self {
-        let timestamp = Utc::now().timestamp();
-        let hash = Block::calculate_hash(index, timestamp, &transactions, &previous_hash);
-        Block {
-            index,
-            timestamp,
+    pub fn new(transactions: Vec<Transaction>, previous_hash: String) -> Self {
+        let mut block = Block {
+            timestamp: Utc::now().timestamp(),
             transactions,
             previous_hash,
-            hash,
-        }
+            hash: String::new(),
+            nonce: 0,
+        };
+        block.hash = block.calculate_hash();
+        block
     }
 
-    pub fn calculate_hash(index: u32, timestamp: i64, transactions: &[Transaction], previous_hash: &str) -> String {
-        let transactions_str = serde_json::to_string(transactions).unwrap_or_default();
-        let input = format!("{}{}{}{}", index, timestamp, transactions_str, previous_hash);
+    pub fn calculate_hash(&self) -> String {
         let mut hasher = Sha256::new();
+        let input = format!(
+            "{}{}{}{}",
+            self.timestamp,
+            serde_json::to_string(&self.transactions).unwrap(),
+            self.previous_hash,
+            self.nonce
+        );
         hasher.update(input);
         let result = hasher.finalize();
         format!("{:x}", result)
@@ -47,32 +53,31 @@ mod tests {
 
     #[test]
     fn test_block_creation() {
-        let tx = vec![Transaction {
-            sender: String::from("Alice"),
-            receiver: String::from("Bob"),
-            amount: 10,
+        let transactions = vec![Transaction {
+            sender: "Alice".to_string(),
+            receiver: "Bob".to_string(),
+            amount: 50.0,
         }];
-        let block = Block::new(0, tx.clone(), String::from("0"));
-        assert_eq!(block.index, 0);
-        assert_eq!(block.transactions, tx);
-        assert_eq!(block.previous_hash, String::from("0"));
+        let previous_hash = "0".to_string();
+        let block = Block::new(transactions.clone(), previous_hash.clone());
+
+        assert_eq!(block.transactions, transactions);
+        assert_eq!(block.previous_hash, previous_hash);
         assert!(!block.hash.is_empty());
+        assert_eq!(block.nonce, 0);
     }
 
     #[test]
-    fn test_hash_consistency() {
-        let tx = vec![Transaction {
-            sender: String::from("Alice"),
-            receiver: String::from("Bob"),
-            amount: 10,
+    fn test_block_hash() {
+        let transactions = vec![Transaction {
+            sender: "Alice".to_string(),
+            receiver: "Bob".to_string(),
+            amount: 50.0,
         }];
-        let block = Block::new(0, tx.clone(), String::from("0"));
-        let recalculated_hash = Block::calculate_hash(
-            block.index,
-            block.timestamp,
-            &block.transactions,
-            &block.previous_hash,
-        );
-        assert_eq!(block.hash, recalculated_hash);
+        let previous_hash = "0".to_string();
+        let block = Block::new(transactions.clone(), previous_hash.clone());
+
+        let expected_hash = block.calculate_hash();
+        assert_eq!(block.hash, expected_hash);
     }
 }

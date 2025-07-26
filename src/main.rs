@@ -1,32 +1,41 @@
 mod block;
 mod blockchain;
 
-use blockchain::Blockchain;
-use block::Transaction;
+use crate::block::Transaction;
+use crate::blockchain::Blockchain;
 
 fn main() {
     let mut blockchain = Blockchain::new();
-    println!("Blockchain creado con bloque génesis: {:?}", blockchain.blocks[0]);
 
-    // Agregar bloques con transacciones
-    blockchain.add_block(vec![
-        Transaction {
-            sender: String::from("Alice"),
-            receiver: String::from("Bob"),
-            amount: 10,
-        },
-    ]);
-    blockchain.add_block(vec![
-        Transaction {
-            sender: String::from("Bob"),
-            receiver: String::from("Charlie"),
-            amount: 5,
-        },
-    ]);
+    blockchain.add_transaction(Transaction {
+        sender: "Alice".to_string(),
+        receiver: "Bob".to_string(),
+        amount: 50.0,
+    });
+    blockchain.add_transaction(Transaction {
+        sender: "Bob".to_string(),
+        receiver: "Charlie".to_string(),
+        amount: 30.0,
+    });
 
-    // Imprimir la cadena
-    println!("Cadena de bloques: {:?}", blockchain.blocks);
+    blockchain.add_block();
 
-    // Verificar la integridad
-    println!("¿Es válida la cadena? {}", blockchain.is_valid());
+    blockchain.add_transaction(Transaction {
+        sender: "Charlie".to_string(),
+        receiver: "Alice".to_string(),
+        amount: 20.0,
+    });
+
+    blockchain.add_block();
+
+    println!("Is blockchain valid? {}", blockchain.is_chain_valid());
+
+    for (i, block) in blockchain.chain.iter().enumerate() {
+        println!("Block #{}", i);
+        println!("Timestamp: {}", block.timestamp);
+        println!("Transactions: {:?}", block.transactions);
+        println!("Previous Hash: {}", block.previous_hash);
+        println!("Hash: {}", block.hash);
+        println!("Nonce: {}\n", block.nonce);
+    }
 }

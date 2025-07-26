@@ -3,48 +3,84 @@ use crate::block::Transaction;
 
 #[derive(Debug)]
 pub struct Blockchain {
-    pub blocks: Vec<Block>,
+    pub chain: Vec<Block>,
+    pub pending_transactions: Vec<Transaction>,
 }
 
 impl Blockchain {
     pub fn new() -> Self {
-        let genesis_block = Block::new(0, vec![], String::from("0"));
+        let genesis_block = Block::new(vec![], "0".to_string());
         Blockchain {
-            blocks: vec![genesis_block],
+            chain: vec![genesis_block],
+            pending_transactions: Vec::new(),
         }
     }
 
-    pub fn add_block(&mut self, transactions: Vec<Transaction>) {
-        let previous_block = self.blocks.last().unwrap();
-        let new_block = Block::new(
-            previous_block.index + 1,
-            transactions,
-            previous_block.hash.clone(),
-        );
-        self.blocks.push(new_block);
+    pub fn add_transaction(&mut self, transaction: Transaction) {
+        self.pending_transactions.push(transaction);
     }
 
-    pub fn is_valid(&self) -> bool {
-        for i in 1..self.blocks.len() {
-            let current_block = &self.blocks[i];
-            let previous_block = &self.blocks[i - 1];
+    pub fn add_block(&mut self) {
+        let previous_block = self.chain.last().unwrap();
+        let new_block = Block::new(self.pending_transactions.clone(), previous_block.hash.clone());
+        self.chain.push(new_block);
+        self.pending_transactions.clear();
+    }
 
-            // Verificar que el hash del bloque actual sea correcto
-            let recalculated_hash = Block::calculate_hash(
-                current_block.index,
-                current_block.timestamp,
-                &current_block.transactions, // Corrección: usar current_block.transactions
-                &current_block.previous_hash, // Corrección: usar current_block.previous_hash
-            );
-            if recalculated_hash != current_block.hash {
+    pub fn is_chain_valid(&self) -> bool {
+        for i in 1..self.chain.len() {
+            let current = &self.chain[i];
+            let previous = &self.chain[i - 1];
+
+            if current.hash != current.calculate_hash() {
                 return false;
             }
 
-            // Verificar que el hash del bloque anterior coincida
-            if current_block.previous_hash != previous_block.hash {
+            if current.previous_hash != previous.hash {
                 return false;
             }
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_blockchain_creation() {
+        let blockchain = Blockchain::new();
+        assert_eq!(blockchain.chain.len(), 1);
+        assert!(blockchain.pending_transactions.is_empty());
+        assert_eq!(blockchain.chain[0].previous_hash, "0");
+    }
+
+    #[test]
+    fn test_blockchain_add_block() {
+        let mut blockchain = Blockchain::new();
+        blockchain.add_transaction(Transaction {
+            sender: "Alice".to_string(),
+            receiver: "Bob".to_string(),
+            amount: 50.0,
+        });
+        blockchain.add_block();
+        assert_eq!(blockchain.chain.len(), 2);
+        assert!(blockchain.pending_transactions.is_empty());
+        assert!(blockchain.is_chain_valid());
+    }
+
+    #[test]
+    fn test_blockchain_validity_invalid() {
+        let mut blockchain = Blockchain::new();
+        blockchain.add_transaction(Transaction {
+            sender: "Alice".to_string(),
+            receiver: "Bob".to_string(),
+            amount: 50.0,
+        });
+        blockchain.add_block();
+
+        blockchain.chain[1].hash = "invalid_hash".to_string();
+        assert!(!blockchain.is_chain_valid());
     }
 }
