@@ -1,0 +1,14 @@
+# Archivos generados por Cargo
+/target/
+**/*.rs.bk
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración del editor
+.vscode/
+.idea/
+
+# Archivos Markdown adicionales
+*.markdown
