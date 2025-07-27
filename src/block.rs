@@ -1,9 +1,8 @@
 use chrono::Utc;
-use sha2::{Digest, Sha256};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Transaction {
     pub sender: String,
     pub receiver: String,
@@ -43,7 +42,7 @@ impl Block {
         );
         hasher.update(input);
         let result = hasher.finalize();
-        format!("{:x}", result)
+        format!("{result:x}")
     }
 }
 

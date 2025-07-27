@@ -22,7 +22,10 @@ impl Blockchain {
 
     pub fn add_block(&mut self) {
         let previous_block = self.chain.last().unwrap();
-        let new_block = Block::new(self.pending_transactions.clone(), previous_block.hash.clone());
+        let new_block = Block::new(
+            self.pending_transactions.clone(),
+            previous_block.hash.clone(),
+        );
         self.chain.push(new_block);
         self.pending_transactions.clear();
     }

@@ -31,7 +31,7 @@ fn main() {
     println!("Is blockchain valid? {}", blockchain.is_chain_valid());
 
     for (i, block) in blockchain.chain.iter().enumerate() {
-        println!("Block #{}", i);
+        println!("Block #{i}");
         println!("Timestamp: {}", block.timestamp);
         println!("Transactions: {:?}", block.transactions);
         println!("Previous Hash: {}", block.previous_hash);
