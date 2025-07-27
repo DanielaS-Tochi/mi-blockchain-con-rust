@@ -1,7 +1,7 @@
-use crate::block::Block;
-use crate::block::Transaction;
+use crate::block::{Block, Transaction};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
     pub pending_transactions: Vec<Transaction>,
@@ -9,7 +9,7 @@ pub struct Blockchain {
 
 impl Blockchain {
     pub fn new() -> Self {
-        let genesis_block = Block::new(vec![], "0".to_string());
+        let genesis_block = Block::new(vec![], "0".to_string(), 2);
         Blockchain {
             chain: vec![genesis_block],
             pending_transactions: Vec::new(),
@@ -25,6 +25,7 @@ impl Blockchain {
         let new_block = Block::new(
             self.pending_transactions.clone(),
             previous_block.hash.clone(),
+            2, // Dificultad 2
         );
         self.chain.push(new_block);
         self.pending_transactions.clear();
@@ -57,6 +58,7 @@ mod tests {
         assert_eq!(blockchain.chain.len(), 1);
         assert!(blockchain.pending_transactions.is_empty());
         assert_eq!(blockchain.chain[0].previous_hash, "0");
+        assert!(blockchain.chain[0].hash.starts_with("00"));
     }
 
     #[test]
@@ -71,6 +73,7 @@ mod tests {
         assert_eq!(blockchain.chain.len(), 2);
         assert!(blockchain.pending_transactions.is_empty());
         assert!(blockchain.is_chain_valid());
+        assert!(blockchain.chain[1].hash.starts_with("00"));
     }
 
     #[test]
@@ -82,7 +85,6 @@ mod tests {
             amount: 50.0,
         });
         blockchain.add_block();
-
         blockchain.chain[1].hash = "invalid_hash".to_string();
         assert!(!blockchain.is_chain_valid());
     }

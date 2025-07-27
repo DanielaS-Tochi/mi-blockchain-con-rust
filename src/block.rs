@@ -19,7 +19,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(transactions: Vec<Transaction>, previous_hash: String) -> Self {
+    pub fn new(transactions: Vec<Transaction>, previous_hash: String, difficulty: usize) -> Self {
         let mut block = Block {
             timestamp: Utc::now().timestamp(),
             transactions,
@@ -27,7 +27,7 @@ impl Block {
             hash: String::new(),
             nonce: 0,
         };
-        block.hash = block.calculate_hash();
+        block.mine_block(difficulty);
         block
     }
 
@@ -40,9 +40,17 @@ impl Block {
             self.previous_hash,
             self.nonce
         );
-        hasher.update(input);
+        hasher.update(&input);
         let result = hasher.finalize();
         format!("{result:x}")
+    }
+
+    pub fn mine_block(&mut self, difficulty: usize) {
+        let target = "0".repeat(difficulty);
+        while !self.hash.starts_with(&target) {
+            self.nonce += 1;
+            self.hash = self.calculate_hash();
+        }
     }
 }
 
@@ -58,12 +66,12 @@ mod tests {
             amount: 50.0,
         }];
         let previous_hash = "0".to_string();
-        let block = Block::new(transactions.clone(), previous_hash.clone());
+        let block = Block::new(transactions.clone(), previous_hash.clone(), 2);
 
         assert_eq!(block.transactions, transactions);
         assert_eq!(block.previous_hash, previous_hash);
         assert!(!block.hash.is_empty());
-        assert_eq!(block.nonce, 0);
+        assert!(block.hash.starts_with("00"));
     }
 
     #[test]
@@ -74,7 +82,7 @@ mod tests {
             amount: 50.0,
         }];
         let previous_hash = "0".to_string();
-        let block = Block::new(transactions.clone(), previous_hash.clone());
+        let block = Block::new(transactions.clone(), previous_hash.clone(), 2);
 
         let expected_hash = block.calculate_hash();
         assert_eq!(block.hash, expected_hash);
