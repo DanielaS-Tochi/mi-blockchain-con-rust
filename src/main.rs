@@ -31,6 +31,44 @@ enum Commands {
 fn main() {
     let mut blockchain = Blockchain::new();
 
+    // Manejar comandos directos desde la línea de comandos
+    let cli = Cli::parse();
+    if let Some(command) = cli.command {
+        match command {
+            Commands::AddTransaction {
+                sender,
+                receiver,
+                amount,
+            } => {
+                blockchain.add_transaction(Transaction {
+                    sender,
+                    receiver,
+                    amount,
+                });
+                println!("Transacción agregada!");
+                return;
+            }
+            Commands::Mine => {
+                blockchain.add_block();
+                println!("Bloque minado!");
+                return;
+            }
+            Commands::Show => {
+                println!("Is blockchain valid? {}", blockchain.is_chain_valid());
+                for (i, block) in blockchain.chain.iter().enumerate() {
+                    println!("Block #{i}");
+                    println!("Timestamp: {}", block.timestamp);
+                    println!("Transactions: {:?}", block.transactions);
+                    println!("Previous Hash: {}", block.previous_hash);
+                    println!("Hash: {}", block.hash);
+                    println!("Nonce: {}\n", block.nonce);
+                }
+                return;
+            }
+        }
+    }
+
+    // Modo interactivo
     loop {
         println!("\n=== Mi Blockchain ===");
         println!("Comandos: add-transaction, mine, show, exit");
@@ -50,17 +88,27 @@ fn main() {
             continue;
         }
 
-        let cli = match Cli::try_parse_from(std::iter::once("mi_blockchain").chain(args.iter().copied())) {
-            Ok(cli) => cli,
-            Err(e) => {
-                println!("Error: {e}");
-                continue;
-            }
-        };
+        let cli =
+            match Cli::try_parse_from(std::iter::once("mi_blockchain").chain(args.iter().copied()))
+            {
+                Ok(cli) => cli,
+                Err(e) => {
+                    println!("Error: {e}");
+                    continue;
+                }
+            };
 
         match cli.command {
-            Some(Commands::AddTransaction { sender, receiver, amount }) => {
-                blockchain.add_transaction(Transaction { sender, receiver, amount });
+            Some(Commands::AddTransaction {
+                sender,
+                receiver,
+                amount,
+            }) => {
+                blockchain.add_transaction(Transaction {
+                    sender,
+                    receiver,
+                    amount,
+                });
                 println!("Transacción agregada!");
             }
             Some(Commands::Mine) => {

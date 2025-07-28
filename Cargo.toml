@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+yew = { version = "0.21", features = ["csr"] }
+wasm-bindgen = "0.2"
 chrono = "0.4"
 sha2 = "0.10"
 serde = { version = "1.0", features = ["derive"] }

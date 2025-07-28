@@ -9,7 +9,7 @@ pub struct Blockchain {
 
 impl Blockchain {
     pub fn new() -> Self {
-        let genesis_block = Block::new(vec![], "0".to_string(), 2);
+        let genesis_block = Block::new(vec![], "0".to_string(), 3);
         Blockchain {
             chain: vec![genesis_block],
             pending_transactions: Vec::new(),
@@ -22,11 +22,13 @@ impl Blockchain {
 
     pub fn add_block(&mut self) {
         let previous_block = self.chain.last().unwrap();
-        let new_block = Block::new(
-            self.pending_transactions.clone(),
-            previous_block.hash.clone(),
-            2, // Dificultad 2
-        );
+        let mut transactions = self.pending_transactions.clone();
+        transactions.push(Transaction {
+            sender: "Network".to_string(),
+            receiver: "Miner".to_string(),
+            amount: 10.0, // Recompensa
+        });
+        let new_block = Block::new(transactions, previous_block.hash.clone(), 3); // Dificultad 3
         self.chain.push(new_block);
         self.pending_transactions.clear();
     }
@@ -58,7 +60,7 @@ mod tests {
         assert_eq!(blockchain.chain.len(), 1);
         assert!(blockchain.pending_transactions.is_empty());
         assert_eq!(blockchain.chain[0].previous_hash, "0");
-        assert!(blockchain.chain[0].hash.starts_with("00"));
+        assert!(blockchain.chain[0].hash.starts_with("000")); // Dificultad 3
     }
 
     #[test]
@@ -73,7 +75,16 @@ mod tests {
         assert_eq!(blockchain.chain.len(), 2);
         assert!(blockchain.pending_transactions.is_empty());
         assert!(blockchain.is_chain_valid());
-        assert!(blockchain.chain[1].hash.starts_with("00"));
+        assert!(blockchain.chain[1].hash.starts_with("000")); // Dificultad 3
+        assert_eq!(blockchain.chain[1].transactions.len(), 2); // Transacción + recompensa
+        assert_eq!(
+            blockchain.chain[1].transactions[1],
+            Transaction {
+                sender: "Network".to_string(),
+                receiver: "Miner".to_string(),
+                amount: 10.0,
+            }
+        );
     }
 
     #[test]
@@ -87,5 +98,17 @@ mod tests {
         blockchain.add_block();
         blockchain.chain[1].hash = "invalid_hash".to_string();
         assert!(!blockchain.is_chain_valid());
+    }
+
+    #[test]
+    fn test_pending_transactions_cleared() {
+        let mut blockchain = Blockchain::new();
+        blockchain.add_transaction(Transaction {
+            sender: "Alice".to_string(),
+            receiver: "Bob".to_string(),
+            amount: 50.0,
+        });
+        blockchain.add_block();
+        assert!(blockchain.pending_transactions.is_empty());
     }
 }
