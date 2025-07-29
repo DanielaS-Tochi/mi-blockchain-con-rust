@@ -1,6 +1,10 @@
+mod block;
+mod blockchain;
+
 use yew::prelude::*;
-use crate::block::{Block, Transaction};
+use crate::block::Transaction;
 use crate::blockchain::Blockchain;
+use wasm_bindgen::prelude::*;
 use std::rc::Rc;
 
 #[derive(Clone, PartialEq)]
@@ -16,10 +20,12 @@ fn app() -> Html {
 
     let add_transaction = {
         let state = state.clone();
-        Callback::from(move |(sender, receiver, amount): (String, String, f64)| {
+        Callback::from(move |(sender, receiver, amount): (String, String, String)| {
             let mut blockchain = (*state.blockchain).clone();
-            blockchain.add_transaction(Transaction { sender, receiver, amount });
-            state.set(AppState { blockchain: Rc::new(blockchain) });
+            if let Ok(amount) = amount.parse::<f64>() {
+                blockchain.add_transaction(Transaction { sender, receiver, amount });
+                state.set(AppState { blockchain: Rc::new(blockchain) });
+            }
         })
     };
 
@@ -44,7 +50,7 @@ fn app() -> Html {
 
 #[derive(Properties, PartialEq)]
 struct TransactionFormProps {
-    on_submit: Callback<(String, String, f64)>,
+    on_submit: Callback<(String, String, String)>,
 }
 
 #[function_component(TransactionForm)]
@@ -60,12 +66,34 @@ fn transaction_form(props: &TransactionFormProps) -> Html {
         let on_submit = props.on_submit.clone();
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
-            if let Ok(amount) = (*amount).parse::<f64>() {
-                on_submit.emit(((*sender).clone(), (*receiver).clone(), amount));
-                sender.set(String::new());
-                receiver.set(String::new());
-                amount.set(String::new());
-            }
+            on_submit.emit(((*sender).clone(), (*receiver).clone(), (*amount).clone()));
+            sender.set(String::new());
+            receiver.set(String::new());
+            amount.set(String::new());
+        })
+    };
+
+    let on_sender_input = {
+        let sender = sender.clone();
+        Callback::from(move |e: InputEvent| {
+            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+            sender.set(input.value());
+        })
+    };
+
+    let on_receiver_input = {
+        let receiver = receiver.clone();
+        Callback::from(move |e: InputEvent| {
+            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+            receiver.set(input.value());
+        })
+    };
+
+    let on_amount_input = {
+        let amount = amount.clone();
+        Callback::from(move |e: InputEvent| {
+            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+            amount.set(input.value());
         })
     };
 
@@ -75,28 +103,19 @@ fn transaction_form(props: &TransactionFormProps) -> Html {
                 type="text"
                 placeholder="Sender"
                 value={(*sender).clone()}
-                oninput={Callback::from(move |e: InputEvent| {
-                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
-                    sender.set(input.value());
-                })}
+                oninput={on_sender_input}
             />
             <input
                 type="text"
                 placeholder="Receiver"
                 value={(*receiver).clone()}
-                oninput={Callback::from(move |e: InputEvent| {
-                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
-                    receiver.set(input.value());
-                })}
+                oninput={on_receiver_input}
             />
             <input
                 type="number"
                 placeholder="Amount"
                 value={(*amount).clone()}
-                oninput={Callback::from(move |e: InputEvent| {
-                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
-                    amount.set(input.value());
-                })}
+                oninput={on_amount_input}
             />
             <button type="submit">{ "Agregar Transacción" }</button>
         </form>

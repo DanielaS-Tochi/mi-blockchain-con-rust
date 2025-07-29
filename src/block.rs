@@ -9,7 +9,7 @@ pub struct Transaction {
     pub amount: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Block {
     pub timestamp: i64,
     pub transactions: Vec<Transaction>,
