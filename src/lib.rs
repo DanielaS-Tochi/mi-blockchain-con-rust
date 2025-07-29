@@ -4,18 +4,20 @@ pub mod blockchain;
 use yew::prelude::*;
 use crate::block::Transaction;
 use crate::blockchain::Blockchain;
-use wasm_bindgen::prelude::*;
 use std::rc::Rc;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 #[derive(Clone, PartialEq)]
 struct AppState {
     blockchain: Rc<Blockchain>,
+    message: Option<String>, // Campo para mensajes de alerta
 }
 
 #[function_component(App)]
 fn app() -> Html {
     let state = use_state(|| AppState {
         blockchain: Rc::new(Blockchain::new()),
+        message: None,
     });
 
     let add_transaction = {
@@ -24,7 +26,15 @@ fn app() -> Html {
             let mut blockchain = (*state.blockchain).clone();
             if let Ok(amount) = amount.parse::<f64>() {
                 blockchain.add_transaction(Transaction { sender, receiver, amount });
-                state.set(AppState { blockchain: Rc::new(blockchain) });
+                state.set(AppState {
+                    blockchain: Rc::new(blockchain),
+                    message: Some("Transacción agregada!".to_string()),
+                });
+            } else {
+                state.set(AppState {
+                    blockchain: state.blockchain.clone(),
+                    message: Some("Cantidad inválida".to_string()),
+                });
             }
         })
     };
@@ -34,13 +44,19 @@ fn app() -> Html {
         Callback::from(move |_| {
             let mut blockchain = (*state.blockchain).clone();
             blockchain.add_block();
-            state.set(AppState { blockchain: Rc::new(blockchain) });
+            state.set(AppState {
+                blockchain: Rc::new(blockchain),
+                message: Some("Bloque minado!".to_string()),
+            });
         })
     };
 
     html! {
         <div>
             <h1>{ "Mi Blockchain" }</h1>
+            if let Some(msg) = &state.message {
+                <p style="color: green;">{ msg }</p>
+            }
             <TransactionForm on_submit={add_transaction} />
             <button onclick={mine_block}>{ "Minar Bloque" }</button>
             <BlockchainDisplay blockchain={(*state.blockchain).clone()} />
@@ -132,7 +148,7 @@ fn blockchain_display(props: &BlockchainDisplayProps) -> Html {
     let is_valid = props.blockchain.is_chain_valid();
     let blocks: Vec<Html> = props.blockchain.chain.iter().enumerate().map(|(i, block)| {
         html! {
-            <div>
+            <div class="block">
                 <h3>{ format!("Block #{}", i) }</h3>
                 <p>{ format!("Timestamp: {}", block.timestamp) }</p>
                 <p>{ format!("Transactions: {:?}", block.transactions) }</p>
