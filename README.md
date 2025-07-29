@@ -127,3 +127,134 @@ Si tienes preguntas, sugerencias o quieres colaborar, contáctame a través de [
 ---
 
 **Estado del Proyecto**: Este proyecto se encuentra en una fase de **cierre temporal** (julio de 2025), pero está abierto a contribuciones y nuevas iteraciones. ¡Únete y hagamos que este blockchain evolucione juntos! 🚀 **Creado con Rust, pasión y un toque de blockchain.**
+
+---
+Mi Blockchain
+A simple blockchain implementation in Rust with a command-line interface (CLI) and a web interface built with Yew. This project is a practice and learning exercise to explore blockchain concepts, Rust programming, and web development with WebAssembly.
+Features
+
+Blockchain Core:
+Blocks with timestamp, transactions, previous hash, hash, and nonce.
+Proof-of-work mining with configurable difficulty (hashes start with three zeros).
+Transaction validation and chain integrity check.
+
+
+CLI:
+Add transactions (sender, receiver, amount).
+Mine blocks with a reward (Network -> Miner: 10).
+Display the blockchain with block details and validity.
+Persists state to blockchain.json.
+
+
+Web Interface:
+Form to add transactions.
+Button to mine blocks.
+Display of blockchain with block details (in-memory state).
+Built with Yew and WebAssembly, served with Trunk.
+
+
+Tests: 6 unit tests for block creation, hashing, and chain validation.
+
+Project Structure
+
+src/block.rs: Defines Transaction and Block structs, with methods for block creation, hashing, and mining.
+src/blockchain.rs: Defines Blockchain struct, with methods for initialization, adding transactions, mining blocks, and validating the chain.
+src/main.rs: CLI implementation using clap for commands (add-transaction, mine, show) and file-based persistence.
+src/lib.rs: Web interface using Yew, with components for transaction input and blockchain display.
+src/mod.rs: Module declarations for block and blockchain.
+index.html: HTML template for the web interface with basic CSS styling.
+Cargo.toml: Dependencies and configuration for Rust, including yew, wasm-bindgen, serde, and sha2.
+
+Branches
+
+main: Core blockchain with CLI, fully functional.
+feature/web-ui: Adds the web interface with Yew and Trunk, maintaining CLI functionality.
+
+Requirements
+
+Rust (stable, wasm32-unknown-unknown target).
+Trunk (cargo install trunk).
+wasm-bindgen (cargo install wasm-bindgen-cli).
+
+Installation
+
+Clone the repository:git clone <your-repo-url>
+cd mi_blockchain
+
+
+Install Rust and required tools:rustup target add wasm32-unknown-unknown
+cargo install trunk wasm-bindgen-cli
+
+
+Checkout desired branch:git checkout main  # or feature/web-ui
+
+
+
+Usage
+CLI
+Run the CLI with:
+cargo run --bin mi_blockchain -- <command>
+
+Available commands:
+
+add-transaction -s <sender> -r <receiver> -a <amount>: Add a transaction (e.g., Alice -> Bob: 5050).cargo run --bin mi_blockchain -- add-transaction -s Alice -r Bob -a 5050
+
+
+mine: Mine a new block with pending transactions and a miner reward.cargo run --bin mi_blockchain -- mine
+
+
+show: Display all blocks and chain validity.cargo run --bin mi_blockchain -- show
+
+
+
+Web Interface
+
+Ensure you're on the feature/web-ui branch:git checkout feature/web-ui
+
+
+Serve the web app:trunk serve
+
+
+Open http://localhost:8080 in your browser.
+Use the form:
+Enter Sender, Receiver, and Amount (e.g., Alice, Bob, 5050).
+Click "Agregar Transacción" to add the transaction.
+Click "Minar Bloque" to mine a block with pending transactions.
+View blocks below, including timestamp, transactions, hashes, and nonce.
+
+
+
+Tests
+Run unit tests:
+cargo test --bin mi_blockchain
+
+Current Limitations
+
+The web interface uses an in-memory blockchain, not synchronized with blockchain.json used by the CLI.
+No API for full CLI-web synchronization (planned for future iterations).
+Basic styling in the web interface; could be enhanced with more CSS or a frontend framework.
+
+Future Improvements
+
+Add a balance command to the CLI to show account balances.
+Implement an API backend to synchronize the web interface with blockchain.json.
+Enhance web styling with a CSS framework (e.g., Tailwind CSS).
+Add a graphical representation of the blockchain in the web interface (e.g., Chart.js).
+Upgrade to Rust edition = "2024" for modern features.
+
+Contributing
+This is a learning project, but feedback and contributions are welcome! To contribute:
+
+Create a new branch for your feature:git checkout -b feature/<your-feature>
+
+
+Commit changes and test thoroughly:cargo test --bin mi_blockchain
+cargo run --bin mi_blockchain -- show
+trunk serve
+
+
+Push and create a pull request to main or feature/web-ui.
+
+License
+MIT License. Feel free to use and modify for learning purposes.
+---
