@@ -1,5 +1,5 @@
-mod block;
-mod blockchain;
+pub mod block;
+pub mod blockchain;
 
 use yew::prelude::*;
 use crate::block::Transaction;

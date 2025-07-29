@@ -1,14 +1,15 @@
+#![allow(dead_code)]
+
+use clap::{Parser, Subcommand};
+use mi_blockchain::block::Transaction;
+use mi_blockchain::blockchain::Blockchain;
+use std::fs;
+
 mod block;
 mod blockchain;
 
-use crate::block::Transaction;
-use crate::blockchain::Blockchain;
-use clap::{Parser, Subcommand};
-use std::io;
-
 #[derive(Parser)]
-#[command(name = "mi_blockchain")]
-#[command(about = "Una blockchain simple en Rust", long_about = None)]
+#[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -29,106 +30,88 @@ enum Commands {
 }
 
 fn main() {
-    let mut blockchain = Blockchain::new();
-
-    // Manejar comandos directos desde la línea de comandos
     let cli = Cli::parse();
-    if let Some(command) = cli.command {
-        match command {
-            Commands::AddTransaction {
-                sender,
-                receiver,
-                amount,
-            } => {
-                blockchain.add_transaction(Transaction {
-                    sender,
-                    receiver,
-                    amount,
-                });
-                println!("Transacción agregada!");
-                return;
-            }
-            Commands::Mine => {
-                blockchain.add_block();
-                println!("Bloque minado!");
-                return;
-            }
-            Commands::Show => {
-                println!("Is blockchain valid? {}", blockchain.is_chain_valid());
-                for (i, block) in blockchain.chain.iter().enumerate() {
-                    println!("Block #{i}");
-                    println!("Timestamp: {}", block.timestamp);
-                    println!("Transactions: {:?}", block.transactions);
-                    println!("Previous Hash: {}", block.previous_hash);
-                    println!("Hash: {}", block.hash);
-                    println!("Nonce: {}\n", block.nonce);
-                }
-                return;
-            }
+    let mut blockchain = fs::read_to_string("blockchain.json")
+        .map(|data| serde_json::from_str(&data).unwrap_or_else(|_| Blockchain::new()))
+        .unwrap_or_else(|_| Blockchain::new());
+
+    match cli.command {
+        Some(Commands::AddTransaction { sender, receiver, amount }) => {
+            blockchain.add_transaction(Transaction { sender, receiver, amount });
+            save_blockchain(&blockchain);
+            println!("Transacción agregada!");
+            return;
         }
+        Some(Commands::Mine) => {
+            blockchain.add_block();
+            save_blockchain(&blockchain);
+            println!("Bloque minado!");
+            return;
+        }
+        Some(Commands::Show) => {
+            println!("Is blockchain valid? {}", blockchain.is_chain_valid());
+            for (i, block) in blockchain.chain.iter().enumerate() {
+                println!("Block #{}", i);
+                println!("Timestamp: {}", block.timestamp);
+                println!("Transactions: {:?}", block.transactions);
+                println!("Previous Hash: {}", block.previous_hash);
+                println!("Hash: {}", block.hash);
+                println!("Nonce: {}", block.nonce);
+            }
+            return;
+        }
+        None => {}
     }
 
     // Modo interactivo
     loop {
-        println!("\n=== Mi Blockchain ===");
-        println!("Comandos: add-transaction, mine, show, exit");
-        println!("Ingresá un comando:");
-
+        println!("Comandos: add-transaction <sender> <receiver> <amount>, mine, show, exit");
         let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Error al leer");
+        std::io::stdin().read_line(&mut input).unwrap();
         let input = input.trim();
 
-        if input == "exit" {
-            println!("Chau!");
-            break;
-        }
-
-        let args: Vec<&str> = input.split_whitespace().collect();
-        if args.is_empty() {
-            continue;
-        }
-
-        let cli =
-            match Cli::try_parse_from(std::iter::once("mi_blockchain").chain(args.iter().copied()))
-            {
-                Ok(cli) => cli,
-                Err(e) => {
-                    println!("Error: {e}");
-                    continue;
-                }
-            };
-
-        match cli.command {
-            Some(Commands::AddTransaction {
-                sender,
-                receiver,
-                amount,
-            }) => {
-                blockchain.add_transaction(Transaction {
-                    sender,
-                    receiver,
-                    amount,
-                });
-                println!("Transacción agregada!");
-            }
-            Some(Commands::Mine) => {
-                blockchain.add_block();
-                println!("Bloque minado!");
-            }
-            Some(Commands::Show) => {
+        match input {
+            "exit" => break,
+            "show" => {
                 println!("Is blockchain valid? {}", blockchain.is_chain_valid());
                 for (i, block) in blockchain.chain.iter().enumerate() {
-                    println!("Block #{i}");
+                    println!("Block #{}", i);
                     println!("Timestamp: {}", block.timestamp);
                     println!("Transactions: {:?}", block.transactions);
                     println!("Previous Hash: {}", block.previous_hash);
                     println!("Hash: {}", block.hash);
-                    println!("Nonce: {}\n", block.nonce);
+                    println!("Nonce: {}", block.nonce);
                 }
             }
-            None => {
-                println!("Comando no reconocido. Usá: add-transaction, mine, show, exit");
+            "mine" => {
+                blockchain.add_block();
+                save_blockchain(&blockchain);
+                println!("Bloque minado!");
             }
+            _ if input.starts_with("add-transaction") => {
+                let parts: Vec<&str> = input.split_whitespace().collect();
+                if parts.len() == 4 {
+                    if let Ok(amount) = parts[3].parse::<f64>() {
+                        blockchain.add_transaction(Transaction {
+                            sender: parts[1].to_string(),
+                            receiver: parts[2].to_string(),
+                            amount,
+                        });
+                        save_blockchain(&blockchain);
+                        println!("Transacción agregada!");
+                    } else {
+                        println!("Cantidad inválida");
+                    }
+                } else {
+                    println!("Uso: add-transaction <sender> <receiver> <amount>");
+                }
+            }
+            _ => println!("Comando inválido"),
         }
     }
+}
+
+fn save_blockchain(blockchain: &Blockchain) {
+    let serialized = serde_json::to_string(blockchain).unwrap();
+    fs::write("blockchain.json", serialized).unwrap();
 }
